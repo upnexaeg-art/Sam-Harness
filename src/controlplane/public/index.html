@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="app.title">Sam-Harness — لوحة التحكم</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;600;650;700&family=IBM+Plex+Mono:wght@400;500&family=Readex+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+
+    <div id="loginGate" class="login-gate" hidden>
+      <div class="login-card">
+        <p class="eyebrow" data-i18n="login.eyebrow">مصادقة المالك</p>
+        <h1 class="hero-title" data-i18n="login.title">Sam-Harness</h1>
+        <p class="lede" data-i18n="login.lede">أدخل توكن المالك لفتح لوحة التحكم. يُولَّد تلقائياً في .controlplane-token أو عبر CONTROL_PLANE_TOKEN.</p>
+        <label class="field-label" for="loginToken" data-i18n="login.tokenLabel">توكن المالك</label>
+        <input id="loginToken" class="composer login-token" type="password" autocomplete="current-password" data-i18n-placeholder="login.placeholder" placeholder="الصق التوكن هنا" />
+        <p class="login-error" id="loginError" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnLogin" data-i18n="login.submit">دخول</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="appShell">
+    <header class="top">
+      <div class="brand">
+        <span class="brand-mark">SH</span>
+        <div>
+          <p class="brand-name" data-i18n="brand.name">Sam-Harness</p>
+          <p class="brand-sub" data-i18n="brand.sub">لوحة التحكم · وكالة هجينة</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="locale-switch" for="localeSelect">
+          <span class="locale-label" data-i18n="nav.locale">اللغة</span>
+          <select id="localeSelect" aria-label="Language">
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <button type="button" class="btn ghost tiny" id="btnNewTaskTop" data-i18n="top.newTask">مهمة جديدة</button>
+        <button type="button" class="btn ghost tiny" id="btnLogout" data-i18n="top.logout" data-i18n-title="top.logout" title="خروج">خروج</button>
+        <div class="top-meta" id="healthMeta">…</div>
+      </div>
+    </header>
+
+    <nav class="platform-nav" id="platformNav" aria-label="أقسام المنصة">
+      <button type="button" class="active" data-view="compose" data-i18n="nav.compose">المهمة</button>
+      <button type="button" data-view="daily" data-i18n="nav.daily">المهام اليومية</button>
+      <button type="button" data-view="profiles" data-i18n="nav.profiles">الهجين</button>
+      <button type="button" data-view="team" data-i18n="nav.team">الفريق</button>
+      <button type="button" data-view="workflow" data-i18n="nav.workflow">المسار الرسومي</button>
+      <button type="button" data-view="memory" data-i18n="nav.memory">الذاكرة</button>
+      <button type="button" data-view="timeline" data-i18n="nav.timeline">التشغيلات</button>
+      <button type="button" data-view="rollback" data-i18n="nav.rollback">التراجع</button>
+      <button type="button" data-view="help" data-i18n="nav.help">المساعدة</button>
+    </nav>
+
+    <div class="layout">
+      <aside class="rail" id="sessionRail">
+        <div class="rail-head">
+          <strong data-i18n="session.title">جلسة اليوم</strong>
+          <button type="button" class="linkish" id="btnClearSession" data-i18n="session.clear">تفريغ</button>
+        </div>
+        <p class="rail-sub" id="sessionMeta" data-i18n="session.empty">لا مهام بعد</p>
+        <ol class="session-list" id="sessionList"></ol>
+      </aside>
+
+      <main class="shell">
+        <section class="stage" id="stageCompose">
+          <p class="eyebrow" data-i18n="compose.eyebrow">محادثة</p>
+          <h1 class="hero-title chat-hero">
+            <span data-i18n="brand.name">Sam-Harness</span>
+          </h1>
+          <p class="lede chat-lede" data-i18n="compose.lede">
+            اكتب أي شيء — النظام يختار المسار: محادثة، بحث، مهمة، أو وكالة كاملة.
+          </p>
+
+          <div class="chat-panel" id="chatPanel">
+            <div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <form class="chat-composer" id="chatForm" autocomplete="off">
+              <label class="sr-only" for="prompt" data-i18n="compose.promptLabel">رسالتك</label>
+              <textarea
+                id="prompt"
+                class="chat-input"
+                rows="2"
+                data-i18n-placeholder="compose.promptPlaceholder"
+                placeholder="مرحبا… أو اسأل، أو صف مهمة"
+                autofocus
+              ></textarea>
+              <button type="submit" class="btn primary chat-send" id="btnSend" data-i18n="compose.send">إرسال</button>
+            </form>
+            <div class="chat-tools">
+              <label class="check force-agency" for="forceAgency">
+                <input type="checkbox" id="forceAgency" />
+                <span data-i18n="compose.forceAgency">تشغيل كوكالة كاملة</span>
+              </label>
+              <span class="path-badge" id="pathBadge" data-path="chat" title="">chat</span>
+              <button type="button" class="linkish" id="btnClearChat" data-i18n="compose.clearChat">مسح المحادثة</button>
+            </div>
+          </div>
+
+          <!-- Hidden advanced fields kept for pipeline / legacy JS -->
+          <div class="hidden" aria-hidden="true">
+            <input id="title" type="text" />
+            <select id="route">
+              <option value="auto" selected>auto</option>
+              <option value="architecture">architecture</option>
+              <option value="operational">operational</option>
+              <option value="implement">implement</option>
+            </select>
+            <input id="targetRepo" type="text" value="" />
+            <input id="packDir" type="text" value="" />
+            <input type="checkbox" id="allowCode" />
+            <div id="codeWorkspaceFields"></div>
+            <div id="operatorWorkspacePanel"></div>
+            <ul id="allowlistRoots"></ul>
+            <ul id="taskRoots"></ul>
+            <ol id="planStepsPreview"></ol>
+            <div id="allowCodeWrap"></div>
+            <span id="pathHint"></span>
+            <button type="button" id="btnPreview"></button>
+            <button type="button" id="btnSave"></button>
+            <button type="button" id="btnSaveRun"></button>
+            <section id="clarifyBox" class="hidden">
+              <p id="clarifyMeta"></p>
+              <div id="clarifyFields"></div>
+              <button type="button" id="btnClarifySubmit"></button>
+            </section>
+            <details id="previewBox" hidden><pre id="previewBody"></pre></details>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageDaily">
+          <p class="eyebrow">P6 · Daily Ops</p>
+          <h1 class="hero-title">مهام يومية.<br /><em>جدول + نتائج.</em></h1>
+          <p class="lede">سجّل مهاماً متكررة على الجهاز ضمن الـ Allowlist، مع دفتر نتائج قابل للمراجعة.</p>
+          <div class="platform-panel">
+            <div class="ops-form">
+              <div class="field">
+                <label for="dailyPrompt">وصف المهمة</label>
+                <input id="dailyPrompt" type="text" placeholder="مثال: انسخ تقرير اليوم إلى Desktop\Archive" />
+              </div>
+              <div class="field">
+                <label for="dailyCron">جدولة (محلية · cron)</label>
+                <select id="dailyCron">
+                  <option value="manual">يدوي فقط</option>
+                  <option value="daily-09">يومياً 09:00</option>
+                  <option value="daily-18">يومياً 18:00</option>
+                  <option value="weekdays-09">أيام العمل 09:00</option>
+                </select>
+              </div>
+              <button type="button" class="btn primary" id="btnDailyAdd">إضافة</button>
+            </div>
+            <p class="lede-sm" id="dailySchedulerHint">المجدول يعمل داخل Control Plane والحالة في SQLite (مع استيراد JSON القديم). السجل تحت Documents/Sam-Harness/runs/daily-ops/.</p>
+            <table class="ops-table">
+              <thead>
+                <tr>
+                  <th>المهمة</th>
+                  <th>الجدول</th>
+                  <th>الحالة</th>
+                  <th>التشغيل التالي</th>
+                  <th>آخر نتيجة</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="dailyOpsBody"></tbody>
+            </table>
+            <p class="lede-sm" id="dailyLedgerMeta" style="margin-top: 1rem">دفتر النتائج فارغ</p>
+            <ul class="memory-list" id="dailyLedgerList"></ul>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageProfiles">
+          <p class="eyebrow">P8 · Hybrid</p>
+          <h1 class="hero-title">ملفات العميل.<br /><em>محلي · سحابة · تلقائي.</em></h1>
+          <p class="lede">اختر كيف يعمل كل دور: محلي رخيص، سحابة للجودة، أو تلقائي حسب التوفر وسقف التكلفة.</p>
+          <div class="platform-panel">
+            <div class="profile-grid" id="profileGrid">
+              <button type="button" class="profile-card" data-profile="local">
+                <strong>Local</strong>
+                <p>Ollama فقط — تكلفة هامشية ≈ 0</p>
+              </button>
+              <button type="button" class="profile-card" data-profile="cloud">
+                <strong>Cloud</strong>
+                <p>مراجعة ثقيلة عبر المفتاح السحابي</p>
+              </button>
+              <button type="button" class="profile-card" data-profile="auto">
+                <strong>Auto</strong>
+                <p>محلي للراوتر؛ سحابة عند الحاجة والجودة</p>
+              </button>
+            </div>
+            <div class="meta-row">
+              <div class="field">
+                <label for="costCap">سقف تكلفة يومي (USD) — يُفرض عند التشغيل · افتراضي $0.50 · $0 = منع السحابة</label>
+                <input id="costCap" type="number" min="0" step="0.1" value="0.5" />
+              </div>
+              <div class="field">
+                <label for="profileNote">ملاحظة</label>
+                <input id="profileNote" type="text" placeholder="اختياري" />
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn primary" id="btnSaveProfile">حفظ الملف</button>
+            </div>
+            <p class="lede-sm" id="profileStatus">—</p>
+            <p class="lede-sm" id="costUsageStatus">—</p>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageTeam">
+          <p class="eyebrow" data-i18n="team.eyebrow">Phase 8 · الفريق</p>
+          <h1 class="hero-title">
+            <span data-i18n="team.hero">تخصيص الفريق.</span><br />
+            <em data-i18n="team.heroEm">أدوار · نماذج · مسار.</em>
+          </h1>
+          <p class="lede" data-i18n="team.lede">
+            أضف أو عطّل أدواراً، عيّن نموذجاً لكل دور، وأعد ترتيب خطوات المتخصصين بعد الموافقة — دون تعديل الكود. حلقة المراجعة وبوابة GO ثابتة.
+          </p>
+          <div class="platform-panel">
+            <div class="actions" style="margin-bottom:1rem">
+              <button type="button" class="btn ghost" id="btnTeamRefresh" data-i18n="team.refresh">تحديث</button>
+              <button type="button" class="btn primary" id="btnTeamSavePipeline" data-i18n="team.savePipeline">حفظ ترتيب المسار</button>
+            </div>
+            <p class="lede-sm" id="teamStatus">—</p>
+            <p class="workspace-title" data-i18n="team.pipeline">ترتيب ما بعد الموافقة</p>
+            <input id="teamPipelineOrder" type="text" class="composer" style="min-height:auto;padding:0.6rem 0.8rem" placeholder="architect,help,marketer,verifier" />
+            <table class="ops-table" id="teamRolesTable" style="margin-top:1rem">
+              <thead>
+                <tr>
+                  <th data-i18n="team.col.id">المعرّف</th>
+                  <th data-i18n="team.col.title">العنوان</th>
+                  <th data-i18n="team.col.enabled">مفعّل</th>
+                  <th data-i18n="team.col.local">محلي</th>
+                  <th data-i18n="team.col.paid">سحابة</th>
+                  <th data-i18n="team.col.route">التوجيه الحي</th>
+                  <th data-i18n="team.col.actions">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="teamRolesBody"></tbody>
+            </table>
+            <h3 class="workspace-title" style="margin-top:1.25rem" data-i18n="team.addRole">إضافة دور مخصّص</h3>
+            <div class="ops-form">
+              <div class="field">
+                <label for="teamRoleId" data-i18n="team.customId">معرّف الدور</label>
+                <input id="teamRoleId" type="text" placeholder="research_analyst" />
+              </div>
+              <div class="field">
+                <label for="teamRoleTitle" data-i18n="team.customTitle">العنوان</label>
+                <input id="teamRoleTitle" type="text" placeholder="Research Analyst" />
+              </div>
+              <div class="field" style="grid-column: span 1">
+                <label for="teamRolePrompt" data-i18n="team.customPrompt">المطالبة</label>
+                <input id="teamRolePrompt" type="text" placeholder="Write a research brief…" />
+              </div>
+              <button type="button" class="btn primary" id="btnTeamAddRole" data-i18n="team.addRole">إضافة دور مخصّص</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageWorkflow">
+          <p class="eyebrow" data-i18n="workflow.eyebrow">Phase 9 · المسار الرسومي</p>
+          <h1 class="hero-title">
+            <span data-i18n="workflow.hero">محرّر سير العمل.</span><br />
+            <em data-i18n="workflow.heroEm">اسحب · اربط · طبّق.</em>
+          </h1>
+          <p class="lede" data-i18n="workflow.lede">
+            لوحة كاملة للوكالة: الراوتر، التشغيلي، الاستقبال، الأدلة، حلقة المراجعة، بوابة GO، المتخصصون، التسليم وLevel-3. حلقة المراجعة وبوابة GO مقفلتان.
+          </p>
+          <div class="platform-panel wf-shell" id="wfEditorRoot">
+            <div class="wf-toolbar">
+              <button type="button" class="btn ghost tiny" id="btnWfRefresh" data-i18n="workflow.refresh">تحديث</button>
+              <button type="button" class="btn ghost tiny" id="btnWfUndo" data-i18n="workflow.undo">تراجع</button>
+              <button type="button" class="btn ghost tiny" id="btnWfRedo" data-i18n="workflow.redo">إعادة</button>
+              <button type="button" class="btn ghost tiny" id="btnWfDraft" data-i18n="workflow.saveDraft">حفظ مسودة</button>
+              <button type="button" class="btn primary tiny" id="btnWfApply" data-i18n="workflow.apply">تطبيق على الفريق</button>
+              <button type="button" class="btn ghost tiny" id="btnWfExport" data-i18n="workflow.export">تصدير JSON</button>
+              <label class="btn ghost tiny wf-file-btn">
+                <span data-i18n="workflow.import">استيراد</span>
+                <input id="wfImportFile" type="file" accept="application/json,.json" hidden />
+              </label>
+              <button type="button" class="btn ghost tiny" id="btnWfAddRole" data-i18n="workflow.addRole">دور مخصّص</button>
+              <button type="button" class="btn ghost tiny" id="btnWfReset" data-i18n="workflow.reset">افتراضي</button>
+              <span class="wf-dirty" id="wfDirtyBadge" hidden>Draft</span>
+            </div>
+            <p class="lede-sm" id="wfStatus">—</p>
+            <p class="lede-sm" id="wfRouteNote"></p>
+            <div class="wf-errors" id="wfErrors" hidden></div>
+            <div class="wf-workspace">
+              <div class="wf-canvas-wrap" id="wfCanvas" aria-label="workflow canvas"></div>
+              <aside class="wf-side" id="wfSidePanel">
+                <p class="lede-sm" data-i18n="workflow.panelEmpty">اختر عقدة للتعديل.</p>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageMemory">
+          <p class="eyebrow">P9 · Memory</p>
+          <h1 class="hero-title">ذاكرة المشروع.<br /><em>دروس قابلة للاسترجاع.</em></h1>
+          <p class="lede">ملاحظات قصيرة لكل عميل/مشروع تُحقَن لاحقاً في التوصيف والمراجعة.</p>
+          <div class="platform-panel">
+            <div class="ops-form">
+              <div class="field">
+                <label for="memKey">المفتاح</label>
+                <input id="memKey" type="text" placeholder="مثال: maw3ed / desktop-prefs" />
+              </div>
+              <div class="field" style="grid-column: span 1">
+                <label for="memValue">الملاحظة</label>
+                <input id="memValue" type="text" placeholder="ما يجب تذكّره في المهام القادمة" />
+              </div>
+              <button type="button" class="btn primary" id="btnMemAdd">حفظ</button>
+            </div>
+            <ul class="memory-list" id="memoryList"></ul>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageTimeline">
+          <p class="eyebrow">Phase 3 · Observability</p>
+          <h1 class="hero-title">سجل التشغيلات.<br /><em>خط زمني قابل للاستئناف.</em></h1>
+          <p class="lede">كل تشغيل له معرّف ومسار تحقق (trace) وأحداث أدوات/نماذج/نقاط حفظ. اختر تشغيلاً لعرض الخط الزمني.</p>
+          <div class="platform-panel">
+            <div class="meta-row">
+              <div class="field">
+                <label for="tenantIdInput">Tenant / عميل</label>
+                <input id="tenantIdInput" type="text" value="local" placeholder="local" />
+              </div>
+              <button type="button" class="btn ghost" id="btnTenantApply">تطبيق</button>
+              <button type="button" class="btn primary" id="btnRefreshRuns">تحديث</button>
+            </div>
+            <p class="lede-sm" id="timelineMeta">—</p>
+            <table class="ops-table" id="runsTable">
+              <thead>
+                <tr>
+                  <th>المعرّف</th>
+                  <th>الوضع</th>
+                  <th>الحالة</th>
+                  <th>المحاولة</th>
+                  <th>البداية</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="runsBody"></tbody>
+            </table>
+            <h3 class="workspace-title" style="margin-top:1.25rem">الخط الزمني</h3>
+            <ol class="memory-list" id="timelineList"></ol>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageRollback">
+          <p class="eyebrow">P10 · Hardened implement</p>
+          <h1 class="hero-title">دفتر التراجع.<br /><em>قبل لمس كود العميل.</em></h1>
+          <p class="lede">كل كتابة Level-3 تُسجَّل بمسار ونسخة سابقة لاسترجاع آمن.</p>
+          <div class="platform-panel">
+            <p class="rollback-empty" id="rollbackEmpty">لا إدخالات بعد — تظهر بعد تنفيذ بموافقة GO.</p>
+            <table class="ops-table hidden" id="rollbackTable">
+              <thead>
+                <tr>
+                  <th>الوقت</th>
+                  <th>الملف</th>
+                  <th>الإجراء</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="rollbackBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageHelp">
+          <p class="eyebrow" data-i18n="help.eyebrow">مساعدة الوكالة</p>
+          <h1 class="hero-title">
+            <span data-i18n="help.hero">دليل Sam-Harness.</span><br />
+            <em data-i18n="help.heroEm">من الكود الفعلي.</em>
+          </h1>
+          <p class="lede" data-i18n="help.lede">
+            إجابات مبنية على المصدر الحالي فقط. العناصر غير المنفّذة مُعلَّمة «مخطط / غير منفّذ بعد». ابحث أو اختر موضوعاً.
+          </p>
+          <div class="platform-panel help-panel">
+            <div class="ops-form help-search-row">
+              <div class="field grow">
+                <label for="helpSearch" data-i18n="help.search">بحث في المساعدة</label>
+                <input
+                  id="helpSearch"
+                  type="search"
+                  data-i18n-placeholder="help.searchPlaceholder"
+                  placeholder="مثال: سقف التكلفة، سطح المكتب، الأدوار…"
+                />
+              </div>
+              <button type="button" class="btn primary" id="btnHelpSearch" data-i18n="help.searchBtn">ابحث</button>
+            </div>
+            <p class="lede-sm" data-i18n="help.cliHint">من الطرفية: pnpm run help [موضوع]</p>
+            <p class="lede-sm" data-i18n="help.exportHint">تصدير حزمة HTML/PDF/Markdown: pnpm run help:export</p>
+            <div class="help-layout">
+              <aside class="help-topics" aria-label="topics">
+                <p class="workspace-title" data-i18n="help.topics">المواضيع</p>
+                <ul class="help-topic-list" id="helpTopicList"></ul>
+              </aside>
+              <article class="help-article" id="helpArticle">
+                <p class="lede-sm" id="helpArticleMeta" data-i18n="help.empty">اختر موضوعاً أو ابحث بكلمة مفتاحية</p>
+                <div class="help-body" id="helpBody"></div>
+              </article>
+            </div>
+            <ul class="memory-list" id="helpSearchHits" hidden></ul>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageRun">
+          <p class="eyebrow">التشغيل</p>
+          <h1 class="hero-title">المهمة جاهزة.<br /><em>اختر الوضع.</em></h1>
+          <p class="lede" id="runSummary">—</p>
+
+          <div class="run-grid" id="runGrid">
+            <button
+              type="button"
+              class="run-opt primary-opt"
+              data-mode="agency"
+              data-for="operational,architecture,implement"
+            >
+              <strong id="primaryRunLabel">تشغيل المهمة</strong>
+              <span id="primaryRunHint">يحترم route من task.ts</span>
+            </button>
+            <button
+              type="button"
+              class="run-opt warn"
+              data-mode="implement"
+              data-for="architecture,implement"
+            >
+              <strong>تنفيذ Level-3</strong>
+              <span>يتطلب تأكيد GO</span>
+            </button>
+            <button
+              type="button"
+              class="run-opt"
+              data-mode="smoke"
+              data-for="operational,architecture,implement"
+            >
+              <strong>Smoke</strong>
+              <span>فحوصات بدون نماذج</span>
+            </button>
+            <button type="button" class="run-opt muted" data-mode="legacy" data-for="architecture">
+              <strong>Legacy swarm</strong>
+              <span>AGENCY_MODE=0</span>
+            </button>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn ghost" id="btnBack">← تعديل المهمة</button>
+            <button type="button" class="btn danger" id="btnStop" disabled>إيقاف</button>
+          </div>
+
+          <div class="term-wrap">
+            <div class="term-chrome">
+              <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="term-title">UpNexa · Sam-Harness · Live Console</span>
+              <span id="runState" class="term-state">idle</span>
+            </div>
+            <div class="term-banner">
+              ================================================================
+              &nbsp;&nbsp;Hybrid Local + Cloud&nbsp;|&nbsp;LangGraph&nbsp;|&nbsp;Delivery OS
+              ================================================================
+            </div>
+            <pre id="log" class="term-body" aria-live="polite"></pre>
+          </div>
+        </section>
+
+        <section class="stage hidden" id="stageDone">
+          <p class="eyebrow" id="doneEyebrow">التقرير</p>
+          <h1 class="hero-title" id="doneTitle">تم التنفيذ.</h1>
+          <p class="lede" id="doneMeta">—</p>
+
+          <article class="report-card" id="reportCard">
+            <header class="report-head">
+              <span class="report-badge" id="reportBadge">RESULT</span>
+              <div class="quality-badges" id="qualityBadges" aria-label="بوابات الجودة">
+                <span class="q-badge muted" id="badgeAudit">audit —</span>
+                <span class="q-badge muted" id="badgeGoal">goal —</span>
+              </div>
+              <h2 id="reportHeadline">—</h2>
+            </header>
+            <ul class="report-bullets" id="reportBullets"></ul>
+            <div class="report-next">
+              <h3>الخطوات التالية</h3>
+              <ul id="reportNext"></ul>
+            </div>
+
+            <details class="artifact-panel" id="artifactPanel" hidden>
+              <summary class="artifact-panel-head">
+                <h3>التقارير والمخرجات</h3>
+                <p class="lede-sm" id="artifactPackMeta">افتح التقرير داخل الواجهة أو في النظام.</p>
+              </summary>
+              <div class="artifact-grid" id="artifactGrid"></div>
+            </details>
+
+            <details class="report-raw">
+              <summary>تفاصيل تقنية / ملخص خام</summary>
+              <pre id="doneSummary" class="done-summary"></pre>
+              <p class="artifacts" id="doneArtifacts"></p>
+            </details>
+          </article>
+
+          <div class="actions">
+            <button type="button" class="btn primary" id="btnNewTask">مهمة جديدة</button>
+            <button type="button" class="btn ghost" id="btnRerun">إعادة محاولة (بعد فشل)</button>
+            <button type="button" class="btn ghost" id="btnViewLog">عرض التيرمنال</button>
+            <button type="button" class="btn ghost" id="btnOpenPackFolder">فتح مجلد الحزمة</button>
+          </div>
+        </section>
+
+        <div class="viewer-overlay hidden" id="artifactViewer" role="dialog" aria-modal="true">
+          <div class="viewer-sheet">
+            <header class="viewer-head">
+              <div>
+                <p class="viewer-kicker">معاينة التقرير</p>
+                <h2 id="viewerTitle">—</h2>
+                <p class="viewer-path mono" id="viewerPath">—</p>
+              </div>
+              <div class="viewer-actions">
+                <button type="button" class="btn ghost tiny" id="btnViewerOsOpen">فتح في النظام</button>
+                <button type="button" class="btn ghost tiny" id="btnViewerFolder">المجلد</button>
+                <button type="button" class="btn tiny" id="btnViewerClose">إغلاق</button>
+              </div>
+            </header>
+            <pre class="viewer-body" id="viewerBody"></pre>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="foot">
+      <span data-i18n="footer.note">محلي على 127.0.0.1 · مصادقة مالك · sandbox جذور صريحة · سقف تكلفة مفروض</span>
+      <a href="#" id="footerSessionLink">session JSON</a>
+    </footer>
+    </div><!-- #appShell -->
+    <script src="/workflow-editor.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
