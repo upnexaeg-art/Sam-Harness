@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,6 +54,9 @@ jobs:
           $files = @()
           $files += Get-ChildItem -Path Tools -Recurse -Filter *.ps1 -File
           $files += Get-ChildItem -Path scripts\install -Filter *.ps1 -File
+          if (Test-Path -LiteralPath 'scripts\git') {
+            $files += Get-ChildItem -Path scripts\git -Filter *.ps1 -File
+          }
           foreach ($f in $files) {
             $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
             if ($bytes.Length -lt 3 -or $bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
@@ -129,6 +132,10 @@ jobs:
 
       - name: Production eval gates
         run: pnpm run smoke:prod-gates
+
+      # Phase 3 — deterministic routing/security/cost evals (no model, no network)
+      - name: Deterministic evals
+        run: pnpm run eval
 
       # Phase 4 — real UI Automation against Notepad (windows-latest only)
       - name: Desktop Windows integration (Notepad)
